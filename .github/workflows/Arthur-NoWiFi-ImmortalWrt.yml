@@ -1,4 +1,4 @@
-name: Arthur-ImmortalWrt
+name: Arthur-NoWiFi-ImmortalWrt
 
 on:
   workflow_dispatch:
@@ -9,12 +9,12 @@ on:
 env:
   REPO_URL: https://github.com/laipeng668/immortalwrt.git
   REPO_BRANCH: master
-  CONFIG_FILE: configs/Arthur.config
+  CONFIG_FILE: configs/Arthur.NoWiFi.config
   DIY_SCRIPT: scripts/Roc-script.sh
   CLASH_KERNEL: amd64
   UPLOAD_BIN_DIR: false
   FIRMWARE_RELEASE: true
-  FIRMWARE_TAG: Arthur
+  FIRMWARE_TAG: Arthur.NoWiFi
   TZ: Asia/Shanghai
 
 jobs:
@@ -136,11 +136,11 @@ jobs:
       if: steps.compile.outputs.status == 'success'
       run: |
         cd $OPENWRT_PATH/bin/targets/*/*
-        cp $OPENWRT_PATH/.config Arthur.config
-        mv config.buildinfo Arthur.config.buildinfo
-        mv immortalwrt-qualcommax-ipq60xx.manifest immortalwrt-qualcommax-ipq60xx-Arthur.manifest
+        cp $OPENWRT_PATH/.config Arthur.NoWiFi.config
+        mv config.buildinfo Arthur.NoWiFi.config.buildinfo
+        mv immortalwrt-qualcommax-ipq60xx.manifest immortalwrt-qualcommax-ipq60xx-Arthur.NoWiFi.manifest
         mv -f $OPENWRT_PATH/bin/packages/*/*/*.apk packages
-        tar -zcf Arthur.Packages.tar.gz packages
+        tar -zcf Arthur.NoWiFi.Packages.tar.gz packages
         rm -rf packages feeds.buildinfo version.buildinfo sha256sums profiles.json
         echo "FIRMWARE_PATH=$PWD" >> $GITHUB_ENV
 
@@ -163,7 +163,7 @@ jobs:
         body: |
           **This is OpenWrt Firmware for ${{ env.FIRMWARE_TAG }}**
           ### 📒 固件信息
-          - 这是开启全功能NSS的6.12内核固件，默认主题为Argon；该固件在ImmortalWrt的基础上，添加了额外工具和软件包，具体详见Arthur.config。
+          - 这是开启全功能NSS的6.12内核固件，默认主题为Argon；该固件在ImmortalWrt的基础上，添加了额外的工具和软件包，具体详见Arthur.config。
           - 💻 这是 ${{ env.FIRMWARE_TAG }} 平台使用的 OpenWrt 固件
           - ⚽ 固件源码: ${{ env.REPO_URL }}
           - 💝 源码分支: ${{ env.REPO_BRANCH }}
