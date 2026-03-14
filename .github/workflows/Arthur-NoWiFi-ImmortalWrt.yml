@@ -1,4 +1,4 @@
-name: JDCloud-ImmortalWrt
+name: Arthur-NoWiFi-ImmortalWrt
 
 on:
   workflow_dispatch:
@@ -8,14 +8,13 @@ on:
 
 env:
   REPO_URL: https://github.com/laipeng668/immortalwrt.git
-  REPO_BRANCH: master
-  CONFIG_FILE: configs/JDCloud.config
-  GENERAL_CONFIG_FILE: configs/General.config
+  REPO_BRANCH: openwrt-25.12
+  CONFIG_FILE: configs/Arthur.NoWiFi.config
   DIY_SCRIPT: scripts/Roc-script.sh
   CLASH_KERNEL: amd64
   UPLOAD_BIN_DIR: false
   FIRMWARE_RELEASE: true
-  FIRMWARE_TAG: JDCloud
+  FIRMWARE_TAG: Arthur.NoWiFi
   TZ: Asia/Shanghai
 
 jobs:
@@ -107,7 +106,7 @@ jobs:
 
     - name: Download DL Package(下载DL软件包)
       run: |
-        cat $CONFIG_FILE $GENERAL_CONFIG_FILE > $OPENWRT_PATH/.config
+        cp -f $CONFIG_FILE $OPENWRT_PATH/.config
         cd $OPENWRT_PATH
         make defconfig
         make download -j$(nproc)
@@ -137,11 +136,11 @@ jobs:
       if: steps.compile.outputs.status == 'success'
       run: |
         cd $OPENWRT_PATH/bin/targets/*/*
-        cp $OPENWRT_PATH/.config Arthur.Athena.config
-        mv config.buildinfo Arthur.Athena.config.buildinfo
-        mv immortalwrt-qualcommax-ipq60xx.manifest Arthur.Athena.manifest
+        cp $OPENWRT_PATH/.config Arthur.NoWiFi.config
+        mv config.buildinfo Arthur.NoWiFi.config.buildinfo
+        mv immortalwrt-qualcommax-ipq60xx.manifest Arthur.NoWiFi.manifest
         mv -f $OPENWRT_PATH/bin/packages/*/*/*.apk packages
-        tar -zcf Arthur.Athena.Packages.tar.gz packages
+        tar -zcf Arthur.NoWiFi.Packages.tar.gz packages
         rm -rf packages feeds.buildinfo version.buildinfo sha256sums profiles.json
         echo "FIRMWARE_PATH=$PWD" >> $GITHUB_ENV
 
@@ -164,7 +163,7 @@ jobs:
         body: |
           **This is OpenWrt Firmware for ${{ env.FIRMWARE_TAG }}**
           ### 📒 固件信息
-          - 这是开启全功能NSS的6.12内核固件，默认主题为Aurora；该固件在ImmortalWrt的基础上，添加了额外的软件包cpufreq、ddns、ttyd、upnp、wol、samba4、vlmcsd、aria2、autoreboot、uhttpd、wifischedule、frps、frpc、diskman、hd-idle、banip、acme、arpbind、usb-printer、passwall、openlist、oaf、sqm、wireguard、watchcat、wechatpush、3cat、smartdns（**Taiyi**额外增加了dockerman、gecoosac、lucky），并添加了若干工具，具体详见JDCloud.config(NoWiFi.config)和General.config。
+          - 这是开启全功能NSS的6.12内核固件，默认主题为Aurora；该固件在ImmortalWrt的基础上，添加了额外的工具和软件包，具体详见Arthur.NoWiFi.config。
           - 💻 这是 ${{ env.FIRMWARE_TAG }} 平台使用的 OpenWrt 固件
           - ⚽ 固件源码: ${{ env.REPO_URL }}
           - 💝 源码分支: ${{ env.REPO_BRANCH }}
