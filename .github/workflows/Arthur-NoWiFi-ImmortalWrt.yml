@@ -1,19 +1,18 @@
-name: x86-64-ImmortalWrt
+name: Arthur-NoWiFi-ImmortalWrt
 
 on:
   workflow_dispatch:
   workflow_call:
-  # schedule:
-  #   - cron: 0 20 * * *
+  schedule:
+    - cron: 0 20 * * 5  # 北京时间星期六凌晨4点，定时触发
 
 env:
-  REPO_URL: https://github.com/immortalwrt/immortalwrt.git
+  REPO_URL: https://github.com/laipeng668/immortalwrt.git
   REPO_BRANCH: openwrt-25.12
-  CONFIG_FILE: configs/x86-64.config
-  GENERAL_CONFIG_FILE: configs/General.config
+  CONFIG_FILE: configs/Arthur.NoWiFi.config
   DIY_SCRIPT: scripts/Roc-script.sh
   CLASH_KERNEL: amd64
-  FIRMWARE_TAG: x86-64
+  FIRMWARE_TAG: Arthur.NoWiFi
   TZ: Asia/Shanghai
 
 jobs:
@@ -105,11 +104,8 @@ jobs:
 
     - name: Download DL Package(下载DL软件包)
       run: |
-        cat $CONFIG_FILE $GENERAL_CONFIG_FILE > $OPENWRT_PATH/.config
+        cp -f $CONFIG_FILE $OPENWRT_PATH/.config
         cd $OPENWRT_PATH
-        # 修改配置文件
-        sed -i '/CONFIG_PACKAGE_sqm-scripts-nss=y/d' .config
-        sed -i 's|^\(CONFIG_TARGET_OPTIMIZATION=\).*"|\1"-O3 -pipe -march=x86-64 -mtune=generic"|' .config
         make defconfig
         make download -j$(nproc)
 
@@ -131,11 +127,14 @@ jobs:
       if: steps.compile.outputs.status == 'success'
       run: |
         cd $OPENWRT_PATH/bin/targets/*/*
-        cp $OPENWRT_PATH/.config x86.64.config
-        mv config.buildinfo x86.64.config.buildinfo
-        mv immortalwrt-x86-64-generic.manifest x86.64.manifest
+        cp $OPENWRT_PATH/.config Arthur.NoWiFi.config
+        mv config.buildinfo Arthur.NoWiFi.config.buildinfo
+        mv immortalwrt-qualcommax-ipq60xx.manifest Arthur.NoWiFi.manifest
         mv -f $OPENWRT_PATH/bin/packages/*/*/*.apk packages
-        tar -zcf x86.64.Packages.tar.gz packages
+        tar -zcf Arthur.NoWiFi.Packages.tar.gz packages
+        for file in *qualcommax*.bin; do
+            mv "$file" "${file//qualcommax/nowifi}"
+        done
         rm -rf packages feeds.buildinfo version.buildinfo sha256sums profiles.json
         echo "FIRMWARE_PATH=$PWD" >> $GITHUB_ENV
 
@@ -151,7 +150,7 @@ jobs:
         body: |
           **This is OpenWrt Firmware for ${{ env.FIRMWARE_TAG }}**
           ### 📒 固件信息
-          - 这是基于ImmortalWrt主线制作的固件，默认主题为Aurora；该固件在ImmortalWrt的基础上，添加了额外的软件包ddns、ttyd、upnp、wol、samba4、vlmcsd、aria2、autoreboot、uhttpd、frps、frpc、diskman、hd-idle、banip、acme、arpbind、usb-printer、openlist、dockerman、gecoosac、lucky、oaf、sqm、wireguard、watchcat、wechatpush、3cat、passwall、passwall2、openclash、smartdns，并添加了若干工具，具体详见x86-64.config和General.config。
+          - 这是开启全功能NSS的6.12内核固件，默认主题为Aurora；该固件在ImmortalWrt的基础上，添加了额外的软件包cpufreq、upnp、autoreboot、uhttpd、vlmcsd、usb-printer、sqm、dockerman、gecoosac，并添加了若干工具，具体详见Arthur.NoWiFi.config。
           - 💻 这是 ${{ env.FIRMWARE_TAG }} 平台使用的 OpenWrt 固件
           - ⚽ 固件源码: ${{ env.REPO_URL }}
           - 💝 源码分支: ${{ env.REPO_BRANCH }}
@@ -174,3 +173,10 @@ jobs:
         echo "staging: $(du -sh $OPENWRT_PATH/staging_dir | cut -f 1)"
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Delete Old Workflows(删除旧工作流)
+      uses: Mattraks/delete-workflow-runs@main
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        retain_days: 2
+        keep_minimum_runs: 0
