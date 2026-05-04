@@ -1,19 +1,19 @@
-name: x86-64-ImmortalWrt
+name: RAX3000M-ImmortalWrt
 
 on:
   workflow_dispatch:
   workflow_call:
-  # schedule:
-  #   - cron: 0 20 * * *
+  schedule:
+    - cron: 0 20 * * 5  # 北京时间星期六凌晨4点，定时触发
 
 env:
   REPO_URL: https://github.com/immortalwrt/immortalwrt.git
-  REPO_BRANCH: openwrt-25.12
-  CONFIG_FILE: configs/x86-64.config
+  REPO_BRANCH: openwrt-23.05
+  CONFIG_FILE: configs/RAX3000M.config
   GENERAL_CONFIG_FILE: configs/General.config
   DIY_SCRIPT: scripts/Roc-script.sh
   CLASH_KERNEL: amd64
-  FIRMWARE_TAG: x86-64
+  FIRMWARE_TAG: RAX3000M
   TZ: Asia/Shanghai
 
 jobs:
@@ -57,7 +57,7 @@ jobs:
         echo "OPENWRT_PATH=$PWD" >> $GITHUB_ENV
         VERSION_INFO=$(git show -s --date=short --format="作者: %an<br/>时间: %cd<br/>内容: %s<br/>hash: %H")
         echo "VERSION_INFO=$VERSION_INFO" >> $GITHUB_ENV
-        VERSION_KERNEL=$(grep -oP 'LINUX_KERNEL_HASH-\K[0-9]+\.[0-9]+\.[0-9]+' target/linux/generic/kernel-6.18)
+        VERSION_KERNEL=$(grep -oP 'LINUX_KERNEL_HASH-\K[0-9]+\.[0-9]+\.[0-9]+' include/kernel-5.15)
         echo "VERSION_KERNEL=$VERSION_KERNEL" >> $GITHUB_ENV
 
     - name: Generate Variables(生成变量)
@@ -109,7 +109,9 @@ jobs:
         cd $OPENWRT_PATH
         # 修改配置文件
         sed -i '/CONFIG_PACKAGE_sqm-scripts-nss=y/d' .config
-        sed -i 's|^\(CONFIG_TARGET_OPTIMIZATION=\).*"|\1"-O3 -pipe -march=x86-64 -mtune=generic"|' .config
+        sed -i '/CONFIG_PACKAGE_luci-app-cpufreq=y/d' .config
+        sed -i "/uci.set('dhcp', section_id, 'leasetime', '12h');/a\    uci.set('dhcp', section_id, 'dhcpv4', 'server');" \
+               feeds/luci/modules/luci-mod-network/htdocs/luci-static/resources/view/network/interfaces.js
         make defconfig
         make download -j$(nproc)
 
@@ -131,11 +133,11 @@ jobs:
       if: steps.compile.outputs.status == 'success'
       run: |
         cd $OPENWRT_PATH/bin/targets/*/*
-        cp $OPENWRT_PATH/.config x86.64.config
-        mv config.buildinfo x86.64.config.buildinfo
-        mv immortalwrt-x86-64-generic.manifest x86.64.manifest
-        mv -f $OPENWRT_PATH/bin/packages/*/*/*.apk packages
-        tar -zcf x86.64.Packages.tar.gz packages
+        cp $OPENWRT_PATH/.config RAX3000M.config
+        mv config.buildinfo RAX3000M.config.buildinfo
+        mv immortalwrt-mediatek-filogic.manifest RAX3000M.manifest
+        mv -f $OPENWRT_PATH/bin/packages/*/*/*.ipk packages
+        tar -zcf RAX3000M.Packages.tar.gz packages
         rm -rf packages feeds.buildinfo version.buildinfo sha256sums profiles.json
         echo "FIRMWARE_PATH=$PWD" >> $GITHUB_ENV
 
@@ -151,7 +153,7 @@ jobs:
         body: |
           **This is OpenWrt Firmware for ${{ env.FIRMWARE_TAG }}**
           ### 📒 固件信息
-          - 这是基于ImmortalWrt主线制作的固件，默认主题为Aurora；该固件在ImmortalWrt的基础上，添加了额外的软件包ddns、ttyd、upnp、wol、samba4、vlmcsd、aria2、autoreboot、uhttpd、frps、frpc、diskman、hd-idle、acme、openlist2、dockerman、gecoosac、wireguard、watchcat、3cat、passwall，并添加了若干工具，具体详见x86-64.config和General.config。
+          - 这是CMCC RAX3000M (custom U-Boot layout)的5.15内核固件，默认主题为Aurora；该固件在ImmortalWrt的基础上，添加了额外的软件包ddns、ttyd、upnp、samba4、vlmcsd、aria2、autoreboot、uhttpd、frps、frpc、diskman、hd-idle、acme、passwall、wireguard、watchcat、3cat、fileassistant，并添加了若干工具，具体详见RAX3000M.config和General.config。
           - 💻 这是 ${{ env.FIRMWARE_TAG }} 平台使用的 OpenWrt 固件
           - ⚽ 固件源码: ${{ env.REPO_URL }}
           - 💝 源码分支: ${{ env.REPO_BRANCH }}
