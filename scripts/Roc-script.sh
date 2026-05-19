@@ -8,7 +8,7 @@ sed -i "s#_('Firmware Version'), (L\.isObject(boardinfo\.release) ? boardinfo\.r
                 ? boardinfo.release.description + ' / '\n \
                 : '') + (luciversion || '') + ' / ',\n \
             E('a', {\n \
-                href: 'https://github.com/laipeng668/openwrt-ci-roc/releases',\n \
+                href: 'https://github.com/qqxu223/openwrt-ci-roc/releases',\n \
                 target: '_blank',\n \
                 rel: 'noopener noreferrer'\n \
                 }, [ 'Built by Roc $(date "+%Y-%m-%d %H:%M:%S")' ])\n \
@@ -29,8 +29,11 @@ rm -rf feeds/luci/applications/luci-app-wechatpush
 rm -rf feeds/luci/applications/luci-app-appfilter
 rm -rf feeds/luci/applications/luci-app-frpc
 rm -rf feeds/luci/applications/luci-app-frps
+rm -rf feeds/luci/applications/luci-app-upnp
+rm -rf feeds/luci/applications/luci-app-wol
 rm -rf feeds/luci/themes/luci-theme-argon
 rm -rf feeds/packages/net/open-app-filter
+rm -rf feeds/packages/net/miniupnpd
 rm -rf feeds/packages/net/ariang
 rm -rf feeds/packages/net/aria2
 rm -rf feeds/packages/net/nginx
@@ -61,6 +64,12 @@ mv -f package/frp feeds/packages/net/frp
 git_sparse_clone frp https://github.com/laipeng668/luci applications/luci-app-frpc applications/luci-app-frps
 mv -f package/luci-app-frpc feeds/luci/applications/luci-app-frpc
 mv -f package/luci-app-frps feeds/luci/applications/luci-app-frps
+git_sparse_clone master https://github.com/immortalwrt/packages net/miniupnpd
+mv -f package/miniupnpd feeds/packages/net/miniupnpd
+git_sparse_clone master https://github.com/immortalwrt/luci applications/luci-app-upnp
+mv -f package/luci-app-upnp feeds/luci/applications/luci-app-upnp
+git_sparse_clone master https://github.com/immortalwrt/luci applications/luci-app-wol
+mv -f package/luci-app-wol feeds/luci/applications/luci-app-wol
 git clone --depth=1 https://github.com/jerrykuku/luci-theme-argon feeds/luci/themes/luci-theme-argon
 git clone --depth=1 https://github.com/jerrykuku/luci-app-argon-config feeds/luci/applications/luci-app-argon-config
 git clone --depth=1 https://github.com/eamonxg/luci-theme-aurora feeds/luci/themes/luci-theme-aurora
