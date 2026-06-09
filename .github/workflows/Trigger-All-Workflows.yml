@@ -17,11 +17,17 @@ jobs:
     IPQ807X-LibWrt:
       uses: ./.github/workflows/IPQ807X-LibWrt.yml
 
+    Arthur-NoWiFi-ImmortalWrt:
+      uses: ./.github/workflows/Arthur-NoWiFi-ImmortalWrt.yml
+
     JDCloud-ImmortalWrt:
       uses: ./.github/workflows/JDCloud-ImmortalWrt.yml
 
     JDCloud-NoWiFi-ImmortalWrt:
       uses: ./.github/workflows/JDCloud-NoWiFi-ImmortalWrt.yml
+
+    RAX3000M-ImmortalWrt:
+      uses: ./.github/workflows/RAX3000M-ImmortalWrt.yml
 
     x86-64-ImmortalWrt:
       uses: ./.github/workflows/x86-64-ImmortalWrt.yml
