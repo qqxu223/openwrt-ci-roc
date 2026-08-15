@@ -4,6 +4,8 @@ set -Eeuo pipefail
 PACKAGES_REPO="${PACKAGES_REPO:-https://github.com/laipeng668/packages}"
 LUCI_REPO="${LUCI_REPO:-https://github.com/laipeng668/luci}"
 GECOOSAC_REPO="${GECOOSAC_REPO:-https://github.com/laipeng668/luci-app-gecoosac}"
+ARGON_REPO="${ARGON_REPO:-https://github.com/jerrykuku/luci-theme-argon}"
+ARGON_CONFIG_REPO="${ARGON_CONFIG_REPO:-https://github.com/jerrykuku/luci-app-argon-config}"
 AURORA_REPO="${AURORA_REPO:-https://github.com/eamonxg/luci-theme-aurora}"
 AURORA_CONFIG_REPO="${AURORA_CONFIG_REPO:-https://github.com/eamonxg/luci-app-aurora-config}"
 OPENLIST2_REPO="${OPENLIST2_REPO:-https://github.com/laipeng668/luci-app-openlist2}"
@@ -48,7 +50,7 @@ normalize_package_selection() {
     "" | all | "全部")
       printf 'all\n'
       ;;
-    frp | nginx | luci-app-aria2 | luci-app-frpc | luci-app-frps | luci-app-gecoosac | luci-app-lucky | luci-app-openlist2 | luci-theme-aurora)
+    frp | nginx | luci-app-aria2 | luci-app-frpc | luci-app-frps | luci-app-gecoosac | luci-app-lucky | luci-app-openlist2 | luci-theme-argon | luci-theme-aurora)
       printf '%s\n' "$selection"
       ;;
     aria2 | ariang)
@@ -79,7 +81,7 @@ normalize_package_selection() {
       printf 'luci-app-lucky\n'
       ;;
     *)
-      die "Unsupported PACKAGE_SELECTION: ${1:-} (supported: all, nginx, luci-app-aria2, luci-app-frpc, luci-app-frps, luci-app-gecoosac, luci-app-lucky, luci-app-openlist2, luci-theme-aurora; legacy aliases: aria2, ariang, frp, gecoosac, lucky, openlist2)"
+      die "Unsupported PACKAGE_SELECTION: ${1:-} (supported: all, nginx, luci-app-aria2, luci-app-frpc, luci-app-frps, luci-app-gecoosac, luci-app-lucky, luci-app-openlist2, luci-theme-argon, luci-theme-aurora; legacy aliases: aria2, ariang, frp, gecoosac, lucky, openlist2)"
       ;;
   esac
 }
@@ -320,7 +322,9 @@ remove_builtin_packages() {
     "$SDK_ROOT/feeds/packages/lang/golang" \
     "$SDK_ROOT/feeds/packages/net/nginx" \
     "$SDK_ROOT/feeds/luci/applications/luci-app-frpc" \
-    "$SDK_ROOT/feeds/luci/applications/luci-app-frps"
+    "$SDK_ROOT/feeds/luci/applications/luci-app-frps" \
+    "$SDK_ROOT/feeds/luci/applications/luci-app-argon-config" \
+    "$SDK_ROOT/feeds/luci/themes/luci-theme-argon"
 }
 
 load_custom_packages() {
@@ -337,6 +341,8 @@ load_custom_packages() {
   git_clone_package_repo "$GECOOSAC_REPO" "$SDK_ROOT/package/luci-app-gecoosac" \
     gecoosac/Makefile \
     luci-app-gecoosac/Makefile
+  git_clone_package_repo "$ARGON_REPO" "$SDK_ROOT/package/luci-theme-argon" Makefile
+  git_clone_package_repo "$ARGON_CONFIG_REPO" "$SDK_ROOT/package/luci-app-argon-config" Makefile
   git_clone_package_repo "$AURORA_REPO" "$SDK_ROOT/package/luci-theme-aurora" Makefile
   git_clone_package_repo "$AURORA_CONFIG_REPO" "$SDK_ROOT/package/luci-app-aurora-config" Makefile
   git_clone_package_repo "$OPENLIST2_REPO" "$SDK_ROOT/package/openlist2" \
@@ -356,6 +362,8 @@ prune_luci_translations() {
 
   for root_dir in \
     "$SDK_ROOT/package/luci-app-gecoosac" \
+    "$SDK_ROOT/package/luci-app-argon-config" \
+    "$SDK_ROOT/package/luci-theme-argon" \
     "$SDK_ROOT/package/luci-app-aurora-config" \
     "$SDK_ROOT/package/luci-theme-aurora" \
     "$SDK_ROOT/package/roc" \
@@ -539,6 +547,14 @@ generate_artifact_filters() {
     fi
   fi
 
+  if selection_in luci-theme-argon; then
+    config_package_enabled luci-theme-argon && add_artifact_package luci-theme-argon
+    if config_package_enabled luci-app-argon-config; then
+      add_artifact_package luci-app-argon-config
+      add_luci_i18n_packages argon-config
+    fi
+  fi
+
   [ "${#ARTIFACT_PACKAGE_NAMES[@]}" -gt 0 ] || die "No package artifact filters were generated for PACKAGE_SELECTION=$PACKAGE_SELECTION"
 }
 
@@ -625,6 +641,14 @@ artifact_package_group() {
     return 0
   fi
 
+  if package_file_matches_name "$package_file_name" luci-theme-argon ||
+    package_file_matches_name "$package_file_name" luci-app-argon-config ||
+    package_file_matches_name "$package_file_name" luci-i18n-argon-config-zh-cn ||
+    package_file_matches_name "$package_file_name" luci-i18n-argon-config-zh-tw; then
+    printf 'luci-theme-argon\n'
+    return 0
+  fi
+
   if package_file_matches_name "$package_file_name" nginx ||
     package_file_matches_name "$package_file_name" nginx-full ||
     package_file_matches_name "$package_file_name" nginx-ssl; then
@@ -686,7 +710,7 @@ release_package_name() {
 release_package_arch_suffix() {
   local group_name="$1"
 
-  if [ "$group_name" = luci-theme-aurora ]; then
+  if artifact_group_is_arch_independent "$group_name"; then
     printf 'all\n'
     return
   fi
@@ -701,7 +725,7 @@ artifact_zip_name() {
 
   sdk_prefix="$(normalize_sdk_version "$OPENWRT_SDK_VERSION")"
 
-  if [ "$group_name" = luci-theme-aurora ]; then
+  if artifact_group_is_arch_independent "$group_name"; then
     printf '%s-%s-all.zip\n' "$sdk_prefix" "$group_name"
     return
   fi
@@ -712,9 +736,15 @@ artifact_zip_name() {
 artifact_group_should_be_skipped() {
   local group_name="$1"
 
-  [ "$group_name" = luci-theme-aurora ] || return 1
+  artifact_group_is_arch_independent "$group_name" || return 1
   [ "$PACKAGE_SELECTED_ARCH" = ALL ] || return 1
   [ "$PACKAGE_ARCH_NAME" != x86-64 ]
+}
+
+artifact_group_is_arch_independent() {
+  local group_name="$1"
+
+  [ "$group_name" = luci-theme-argon ] || [ "$group_name" = luci-theme-aurora ]
 }
 
 generate_compile_targets() {
@@ -803,6 +833,11 @@ generate_compile_targets() {
   if selection_in luci-theme-aurora && ! artifact_group_should_be_skipped luci-theme-aurora; then
     config_package_enabled luci-theme-aurora && add_compile_target package/luci-theme-aurora/compile
     config_package_enabled luci-app-aurora-config && add_compile_target package/luci-app-aurora-config/compile
+  fi
+
+  if selection_in luci-theme-argon && ! artifact_group_should_be_skipped luci-theme-argon; then
+    config_package_enabled luci-theme-argon && add_compile_target package/luci-theme-argon/compile
+    config_package_enabled luci-app-argon-config && add_compile_target package/luci-app-argon-config/compile
   fi
 
   [ "${#COMPILE_TARGETS[@]}" -gt 0 ] || die "No matching package compile targets were enabled by $PACKAGE_CONFIG_FILES for PACKAGE_SELECTION=$PACKAGE_SELECTION"
