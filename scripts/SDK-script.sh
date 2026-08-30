@@ -62,9 +62,6 @@ normalize_package_selection() {
     frps)
       printf 'luci-app-frps\n'
       ;;
-    frp-binary-toml | frp-toml)
-      printf 'frp\n'
-      ;;
     nginx-full | nginx-ssl)
       printf 'nginx\n'
       ;;
@@ -333,9 +330,9 @@ load_custom_packages() {
   git_sparse_clone aria2 "$PACKAGES_REPO" feeds/packages net/aria2
   git_sparse_clone ariang "$PACKAGES_REPO" feeds/packages net/ariang
   git_sparse_clone master "$PACKAGES_REPO" feeds/packages lang/golang
-  git_sparse_clone frp-binary-toml "$PACKAGES_REPO" feeds/packages net/frp
+  git_sparse_clone frp-binary "$PACKAGES_REPO" feeds/packages net/frp
   git_sparse_clone nginx "$PACKAGES_REPO" feeds/packages net/nginx
-  git_sparse_clone frp-toml "$LUCI_REPO" feeds/luci \
+  git_sparse_clone frp "$LUCI_REPO" feeds/luci \
     applications/luci-app-frpc \
     applications/luci-app-frps
   git_clone_package_repo "$GECOOSAC_REPO" "$SDK_ROOT/package/luci-app-gecoosac" \
